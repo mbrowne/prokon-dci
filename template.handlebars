@@ -1,0 +1,35 @@
+<div class="site-center">
+	<div class="site-body">
+		<header class="site-header">
+			<div class="std-gutter">
+				<a class="site-title" href="#//">{{siteTitle}}</a>
+			</div>
+		</header>
+		<div class="std-gutter">
+			<div class="col width1of4">
+				<nav id="navSidebar" class="menu nav-sidebar">
+					<ul class="nav tree">
+					{{#each navLinks}}
+						{{> navSidebarLinks }}
+					{{/each}}
+					</ul>
+				</nav>
+			</div>
+			<main id="mainContent" class="col width-fill">
+				{{! main page content will go here }}
+			</main>
+		</div>
+	</div><!--site-body-->
+	
+	<footer class="site-footer">
+		<div class="std-gutter">
+			<div class="pipes">
+				<ul class="nav">
+				{{#each navLinks}}
+					<li><a href="{{url}}">{{@key}}</a></li>
+				{{/each}}
+				</ul>
+			</div>
+		</div>
+	</footer>
+</div>

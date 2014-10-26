@@ -1,0 +1,99 @@
+/* use box-sizing by default for all elements
+   Do not copy this line to a system that needs to properly support IE7!
+   (you'll end up relying on it perhaps unknowingly and then finding the site broken in IE7)
+ */
+* { -moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box;}
+
+/* Put a standard gutter on these common elements, as well as any element with the std-gutter class.
+   This makes it possible to have a standard gutter compatible with IE<=7 without needing to wrap every
+   grid cell with <div class="cell">  (as is done in the Cascade Framework examples)
+*/
+.std-gutter, .panel, .media, h1, h2, h3, h4, h5, h6, dl, p, blockquote, table, address, pre, figure {margin:15px;}
+/* since we're applying a standard margin, list-style-position:inside is needed to keep lists
+   in alignment with everything else */
+ul, ol {list-style-position:inside;}
+ul {margin:0 0 9px 2.4em}
+ol {margin:0 0 9px 2em}
+/* ul, ol {margin:15px; position:relative; left:25px;} */
+/* immediate children of .std-gutter elements shouldn't have margins by default
+   because if the .std-gutter element has children, the intent is probably not to have the margin
+   applied again for child elements like h3, p, etc. listed above.
+   To override this, those child elements can simply be assigned the .std-gutter class as well  */
+.std-gutter > * {margin:0;}
+.std-gutter > .std-gutter {margin:15px;}
+/* special case for table since tables in the Cascade framework are 100% width by default and
+   would otherwise not have a gutter on the right */
+table {padding-right:15px;}
+.no-gutter {margin:0 !important;}
+
+body {font-size:14px;}
+
+.logo {
+    background:url('../img/cascade icons/logo-small-bg.png');
+}
+
+.logo:hover {
+    background:url('../img/cascade icons/logo-small-bg-selected.png');
+}
+
+.site-center {
+	background:#2d3538;
+}
+
+.site-header .site-title {color:#fff; font-weight:bold; font-size:130%;}
+.site-header .site-title:hover {text-decoration:none; color:#fff;}
+
+.nav-sidebar {margin-top:31px;}
+.nav-sidebar .nav li {white-space:normal;}
+.nav-sidebar .active {background:#E1E7EF;}
+.nav-sidebar .active a {background: transparent;}
+.nav-sidebar li.active ul {background: #fff;}
+.nav-sidebar a, .nav-sidebar li {float:none;}
+.nav-sidebar .nav a {color: #4090BA; display:table-cell; padding-left:0;}
+.nav-sidebar .nav a, .nav-sidebar .nav .disabled {font-size:14px; font-weight:bold;}
+
+.nav-sidebar .nav li li.no-children a {padding-left:43px;}
+
+.nav-sidebar .nav li li li a {padding-left:42px;}
+.nav-sidebar .nav li li li.no-children a {padding-left:59px;}
+
+.nav-sidebar .nav li:hover {}
+.nav-sidebar .nav a:hover {color:#337394; background:transparent;}
+
+.nav-sidebar .tree > li.no-children {
+	padding: 4px 7px 4px 20px;
+}
+.nav-sidebar .tree a.collapse-trigger {float:left; padding-left:0; padding-right:0;}
+.nav-sidebar .tree li li a.collapse-trigger {padding-left:20px;}
+
+.site-footer {
+	background:#2d3538;
+}
+
+.site-footer li,.site-footer a {
+	color:#fff;
+	border-color:#fff;
+}
+
+.site-footer a:hover {
+	color:#3981a7;
+}
+
+/*
+.site-center .site-body {
+	padding:15px 15px 50px 15px;
+}
+*/
+
+.site-center .site-body {
+	margin-top:5px;
+}
+
+#mainContent {padding:10px 0 50px 0}
+
+h2 {margin-top:1em;}
+h2:first-child {margin-top:0;}
+
+table {font-size:100%;}
+
+.landing-page-links {font-weight:bold; font-size:14px;}

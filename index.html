@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<!-- Note: It would have been nice to have this <head> section included along with the contents of <body>
+	 that are in template.handlebars, but when stylesheets are loaded via Javascript, sometimes refreshing
+	 the page doesn't correctly clear the cached stylesheets (at least in Firefox), so it's better to
+	 put the stylesheets here unless we can find a workaround.
+-->
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" media="all" href="assets/cascade/assets/css/cascade/production/build-full.min.css">
+	<link rel="stylesheet" media="all" href="assets/css/layout.css">
+	<link rel="stylesheet" media="all" href="assets/css/use-cases.css">
+	<!--[if lt IE 8]><link rel="stylesheet" href="assets/cascade/assets/css/cascade/production/icons-ie7.min.css"><![endif]-->
+	<!--[if lt IE 9]><script src="assets/cascade/assets/js/lib/polyfills/iehtmlshiv.js"></script><![endif]-->
+	<!--<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">-->
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<script src="//code.jquery.com/jquery-1.9.1.min.js"></script>
+<!-- fallback in case jQuery failed to load from jQuery CDN -->
+<script>window.jQuery || document.write('<script src="assets/js/lib/jquery-1.9.1.min.js">\x3C/script>')</script>
+<script src="assets/cascade/assets/js/lib/app/detector.js"></script>
+<script src="assets/cascade/assets/js/lib/jquery/jquery.easing.js"></script>
+<script src="assets/cascade/assets/js/lib/jquery/jquery.cascade.js"></script>
+<script src="assets/js/lib/handlebars.min.js"></script>
+<script src="assets/js/lib/marked/marked.min.js"></script>
+<script>
+
+//IMPORTANT NOTE:
+//Firefox, and maybe other browsers too, will sometimes still load the cached CSS file
+
+function log(msg) {
+	if (window.console) console.log(msg);
+}
+
+var global = {};
+
+global.siteTitle = 'Prokon DCI Example - System Design Documentation';
+global.useCasePathRegex = /^use-cases\//;
+
+initNavDataClass(window);
+global.navLinksJson = null;
+global.navLinks = null;
+global.clickedNavLink = null;
+
+$.when(
+	$.ajax('nav-menu.json.php', {cache:false, dataType:'json'})
+	//$.ajax('nav-menu.json', {cache:false, dataType:'json'})
+)
+.then(function(data) {
+	global.navLinksJson = data;
+	global.navLinks = new NavData(data);
+})
+.then(onHashChange) //trigger the hashChange handler for the initial requested page
+.done(function() {
+	//parse the layout template and add it to the <body>
+	$.when($.ajax('nav-sidebar.handlebars', {cache:false, dataType:'html'}),
+		   $.ajax('template.handlebars', {cache:false, dataType:'html'})
+	)
+	.done(function(sidebarTplSrc, layoutTplSource) {
+		sidebarTplSrc = sidebarTplSrc[0];
+		layoutTplSource = layoutTplSource[0];
+		
+		Handlebars.registerPartial('navSidebarLinks', sidebarTplSrc);
+		
+		var template = Handlebars.compile(layoutTplSource);	
+		var html = template({
+			siteTitle: global.siteTitle,
+			navLinks: global.navLinksJson
+		});
+
+		//get the template HTML and append it to <body>
+		var $body = $('<div>'+ html +'</div>');
+		//prefix internal links with #/  (actually #// so that they're relative to the base URL)
+		prefixInternalLinksWithHash($body, true);
+		
+		//append to real <body>
+		$('body').append($body.children());
+		
+		$.event.trigger({type:'templateLoaded'});
+	})
+});
+
+$(document).on('templateLoaded', function() {
+	$(window).on('hashchange', onHashChange);
+	$('#navSidebar a').click(navSidebarLink_click);
+	$(document).on('click', 'a', defaultLinkClickHandler);
+});
+
+function getPageFromHash() {
+	var hash = window.location.hash;
+	if (hash[1]!='/') return false;
+	return hash.substr(2);
+}
+
+//Click event handler for nav links
+function navSidebarLink_click() {
+	global.clickedNavLink = this;
+}
+
+function defaultLinkClickHandler(e) {
+	var link = this;
+	//if this is an internal link
+	if (link.hostname == window.location.hostname && link.hash) {
+		e.preventDefault();
+		var linkUrl = link.hash.substr(2);
+		
+		//a leading slash can be used to make the link relative to the base URL of the documentation site
+		if (linkUrl[0] == '/') {
+			linkUrl = linkUrl.substr(1);
+		}
+		else {
+			var currentUrl = window.location.hash.substr(2);
+			var subDir = currentUrl.substr(0, currentUrl.lastIndexOf('/'));
+			if (subDir) {
+				//if we're already in a subdirectory, make it behave link a regular (non-AJAX) relative link
+				linkUrl = subDir + '/' + linkUrl;
+			}
+		}	
+		window.location.hash = '#/' + linkUrl;
+	}
+}
+
+function onHashChange() {
+	var deferredReturnValue = new $.Deferred();
+	var clickedNavLink = global.clickedNavLink;
+	
+	$('#navSidebar li.active').removeClass('active');
+	var mainContent;
+	
+	var pageUrl = getPageFromHash();
+	if (!pageUrl) pageUrl = 'index';
+	else if (pageUrl[0]=='.') {
+		throw new Error('Relative URLs pointing to parent directories (or any URL beginning with a dot) are not supported');
+	}
+	
+	//retrieve the Markdown file for the page, parse it, and display it
+	$.ajax(pageUrl + '.md', {cache:false, dataType:'html'})
+	.done(function(markdownSrc) {
+		updatePageTitle(pageUrl);
+		mainContent = marked(markdownSrc);
+		displayPageContent(mainContent, pageUrl);
+		deferredReturnValue.resolve();
+	})
+	.fail(function() {
+		//determine which nav link (if any) was clicked
+		var firstMatchingLink, firstMatchingLinkText;
+		//If no markdown (.md) file exists for the given URL, then attempt to automatically
+		//generate a landing page if the matching navigation link has child links
+		if (pageUrl=='index') {
+			firstMatchingLink = {children: global.navLinks.toJson()};
+			//this isn't actually the name of the nav link, but since this variable gets used as
+			//the title of the automatic landing page below...
+			firstMatchingLinkText = 'Table of Contents';
+		}
+		//if the URL change was due to clicking a link on the nav menu,
+		//clickedNavLink should be set at this point
+		else if (clickedNavLink) {
+			firstMatchingLinkText = clickedNavLink.innerHTML;
+			firstMatchingLink = global.navLinks.getLinks(firstMatchingLinkText, clickedNavLink.hash.substr(3))[0];
+		}
+		//if the user went directly to a specific URL and there are multiple nav menu
+		//links pointing to that URL, we just get the first link matching the URL
+		else {
+			var linkData = global.navLinks.getLinksForUrl(pageUrl);
+			if (linkData) {			
+				//We assume that the first matching link is the active nav link
+				firstMatchingLinkText = Object.getOwnPropertyNames(linkData)[0];
+				firstMatchingLink = linkData[firstMatchingLinkText];
+			}
+		}
+		
+		if (firstMatchingLink && firstMatchingLink.children) {
+			generateLandingPageHtml(firstMatchingLinkText, firstMatchingLink).done(function(landingPageHtml) {
+				updatePageTitle(pageUrl);
+				displayPageContent(landingPageHtml, pageUrl, true);
+				deferredReturnValue.resolve();
+			});
+		}
+		else {
+			//if the page doesn't exist, and there are no child nav links from which
+			//to automatically generate a landing page, display a "Not Found" error
+			updatePageTitle('Not Found');
+			var html = '<h1>Page Not Found</h1>';
+			$('#mainContent').html(html);
+			displayPageContent(html, pageUrl);
+			deferredReturnValue.resolve();
+		}
+	});
+	
+	return deferredReturnValue.promise();
+}
+
+function displayPageContent() {
+	var args = arguments;
+	if ($('#mainContent').length==0) {
+		$(document).on('templateLoaded', display);
+	}
+	else display();
+
+	function display() {
+		doDisplayPageContent.apply(null, args);
+	}
+}
+
+function doDisplayPageContent(html, pageUrl, isAutomaticLandingPage) {
+	var $pageContent = $('#mainContent');
+	$pageContent.html(html);
+	prefixInternalLinksWithHash($pageContent);
+	
+	//if a navigation sidebar link was just clicked rather than navigating to this page some other way		
+	if (global.clickedNavLink) {		
+		var $activeNavItem = $(global.clickedNavLink).parent();
+		global.clickedNavLink = null;
+	}
+	else var $activeNavItem = $('#navSidebar a[href="#//'+pageUrl+'"]').parent();
+	
+	$activeNavItem.addClass('active');
+	expandMenuItemAndParents($activeNavItem);
+	
+	//special formatting for use cases
+	if (!isAutomaticLandingPage && pageUrl.match(global.useCasePathRegex)) reformatUseCaseScenarios();
+};
+
+function expandMenuItemAndParents($navItem) {
+	if ($navItem.length>0) {
+		if ($navItem.hasClass('collapsed')) $navItem.find('.collapse-trigger').trigger('click');
+		expandMenuItemAndParents($navItem.parent().closest('li'));
+	}
+}
+
+function updatePageTitle(pageUrl) {
+	if (pageUrl=='index') document.title = global.siteTitle;
+	else document.title = global.siteTitle + ' - ' + hyphensToTitleCase(pageUrl);
+}
+
+function hyphensToTitleCase(str) {
+	return ucwords(str.replace(/-/g, ' ').replace(/\//g, ' - '));
+}
+
+/**
+ * @param context	jQuery 	container element
+ * @param makeRelativeToBaseUrl	If true, links will be relative to the base URL rather than relative to the previous page
+ */
+function prefixInternalLinksWithHash(context, makeRelativeToBaseUrl) {
+	$("a", context).attr("href", function(i, href) {
+		if (href && href[0]!='#' & href[0]!='.' && this.hostname == window.location.hostname &&
+			//exclude URLs pointing directly to a file like an image or PDF (by looking for a file extension)
+			!href.match(/\.\w+$/)
+		) {
+			return (makeRelativeToBaseUrl ? '#//': '#/') + href;
+		}
+	});
+}
+
+//auto-generate a landing page that simply lists all the nav links for a section
+function generateLandingPageHtml(title, activeNavLink) {
+	var deferredReturnValue = new $.Deferred();
+	var template = getLandingPageTemplate();
+	var html;
+	template.done(function(tpl) {
+		html = tpl({
+			pageTitle: title,
+			navLinks: activeNavLink.children
+		});
+		deferredReturnValue.resolve(html);
+	});
+	return deferredReturnValue.promise();
+}
+
+var landingPageTemplate;
+
+function getLandingPageTemplate() {
+	var deferredReturnValue = new $.Deferred();
+	if (!landingPageTemplate) {
+		$.when($.ajax('auto-landing-page.handlebars', {cache:false, dataType:'html'}),
+				$.ajax('landing-page-links.handlebars', {cache:false, dataType:'html'})
+		)
+		.done(function(landingPageTplSrc, landingPageLinksSrc) {
+			landingPageTplSrc = landingPageTplSrc[0];
+			landingPageLinksSrc = landingPageLinksSrc[0];
+			
+			Handlebars.registerPartial('landingPageLinks', landingPageLinksSrc);
+			
+			landingPageTemplate = Handlebars.compile(landingPageTplSrc);
+			deferredReturnValue.resolve(landingPageTemplate);
+		});
+	}
+	else deferredReturnValue.resolve(landingPageTemplate);
+	return deferredReturnValue.promise();
+}
+
+function initNavDataClass(scope) {
+	scope.NavData = function NavData(json) {
+		this._links = {};
+		this._linksByName = {};
+		this._linksByUrl = {};
+		//this.length = 0;
+		if (json) this.fromJson(json);
+	}
+
+	scope.NavData.prototype = {
+		constructor: NavData,
+		fromJson: function(json) {
+			this._links = json;
+			var linkText, curLink, linksForCurUrl,
+				self = this;
+			
+			$.each(json, function findMatches(linkText, curLink) {
+				//index by link name (the visible text of the link)
+				if (!self._linksByName[linkText]) self._linksByName[linkText] = [];
+				self._linksByName[linkText].push(curLink);
+				
+				//also index by URL (note that there may be more than one link to the same URL)
+				if (! (linksForCurUrl = self._linksByUrl[curLink.url]) ) {
+					linksForCurUrl = self._linksByUrl[curLink.url] = {};
+				}
+				linksForCurUrl[linkText] = curLink;
+				
+				//loop children recursively
+				if (curLink.children) {
+					$.each(curLink.children, function(linkText, curLink) {
+						findMatches(linkText, curLink);
+					});
+				}
+			});
+		},
+		toJson: function() {
+			return this._links;
+		},
+		//get all the links pointing to the given URL
+		getLinksForUrl: function(url) {
+			return this._linksByUrl[url];
+		},
+		
+		//getLinks(): Returns all links
+		//getLinks(linkText, url): Returns a specific link,
+		//	or multiple links if there's more than one link with the same name AND url
+		getLinks: function(linkText, url) {
+			if (!linkText && !url) return this._links;
+			if (!url) return this._linksByName[linkText];
+			
+			var links = [];
+			this._linksByName[linkText].forEach(function(link) {
+				if (link.url == url) links.push(link);
+			});
+			return links;
+		}
+	};
+}
+
+
+//Re-structure the HTML for two-column use case scenarios into a table so
+//we can give borders to each step in the scenario
+//(single-column use case scenarios [not divided into "user action" and "system responsibility"] are unaffected)
+function reformatUseCaseScenarios() {
+	$('#mainContent').html( $('<div class="use-case">' + $('#mainContent').html() + '</div>') );
+
+	$('.scenario').each(function() {
+		var $table = $('<table class="scenario-table horizontal-border box-header" />'),
+			$headerRow = $(this).prev('.scenario-columns-header'),
+			$li,
+			$curTr, $curTd, $curOl,
+			stepType,
+			prevStepType;
+		
+		if ($(this).find('li:first').is('.user, .system')) {		
+			//convert to <tr> header
+			var $oldHeaderRow = $headerRow,
+				$h4s = $oldHeaderRow.find('h4'),
+				col1Header = $h4s.eq(0).html() || '',
+				col2Header = $h4s.eq(1).html() || '';
+			
+			$headerRow = $('<tr/>');
+			$headerRow.append( $('<th>'+col1Header+'</th>') );
+			$headerRow.append( $('<th>'+col2Header+'</th>') );
+			
+			$oldHeaderRow.remove();
+			$table.append($headerRow);
+		}
+		else return true; //continue to the next .scenario
+		
+		$(this).children().each(function(i) {		
+			$li = $(this);
+			if ($li.hasClass('user'))
+				stepType = 'user';
+			else if ($li.hasClass('system'))
+				stepType = 'system';
+			
+			//insert empty cell on the left if the first step is a system step (i.e. in the right-hand column)
+			if (i==0 && stepType=='system') {
+				$curTr = $('<tr/>').appendTo($table);
+				$curTr.append( $('<td>&nbsp;</td>') );
+			}
+			
+			$li.removeClass('user system');
+			
+			if (stepType != prevStepType)  {
+				if (stepType=='user') $curTr = $('<tr/>').appendTo($table);
+				$curTd = $('<td/>').appendTo($curTr);
+				$curOl = $('<ol/>').appendTo($curTd);
+			}
+			
+			if ($curOl) $curOl.append($li);
+			prevStepType = stepType;
+		});
+		
+		if (stepType && $curTr.children().length==1) {
+			$curTr.append( $('<td>&nbsp;</td>') );
+		}
+		
+		$(this).replaceWith($table);
+	});
+}
+
+function ucwords(str) {
+  // http://kevin.vanzonneveld.net
+  // +   original by: Jonas Raoni Soares Silva (http://www.jsfromhell.com)
+  // +   improved by: Waldo Malqui Silva
+  // +   bugfixed by: Onno Marsman
+  // +   improved by: Robin
+  // +      input by: James (http://www.james-bell.co.uk/)
+  // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+  // *     example 1: ucwords('kevin van  zonneveld');
+  // *     returns 1: 'Kevin Van  Zonneveld'
+  // *     example 2: ucwords('HELLO WORLD');
+  // *     returns 2: 'HELLO WORLD'
+  return (str + '').replace(/^([a-z\u00E0-\u00FC])|\s+([a-z\u00E0-\u00FC])/g, function ($1) {
+    return $1.toUpperCase();
+  });
+}
+	
+</script>
+</body>

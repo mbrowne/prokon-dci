@@ -1,0 +1,12 @@
+{{! partial: landingPageLinks }}
+
+<li>
+	<a href="{{#if disableLink}}javascript:;{{else}}{{url}}{{/if}}" target="{{target}}">{{{@key}}}</a>
+	{{#if children}}
+		<ul>
+		{{#each children}}
+			{{> landingPageLinks}}
+		{{/each}}
+		</ul>
+	{{/if}}
+</li>

@@ -1,0 +1,18 @@
+{{! partial: navSidebarLinks }}
+
+{{#if children}}
+	<li class="collapsible collapsed">
+		<a class="collapse-trigger"><span class="icon icon-collapse"></span></a>
+		<a href="{{#if disableLink}}javascript:;{{else}}{{url}}{{/if}}" target="{{target}}">{{{@key}}}</a>
+
+		<ul class="collapse-section">
+		{{#each children}}
+			{{> navSidebarLinks }}
+		{{/each}}
+		</ul>
+	</li>
+{{else}}
+	<li class="no-children"> <!-- collapsed-->
+		<a href="{{#if disableLink}}javascript:;{{else}}{{url}}{{/if}}" target="{{target}}">{{{@key}}}</a>
+	</li>
+{{/if}}
