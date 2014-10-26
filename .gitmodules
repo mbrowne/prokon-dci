@@ -1,3 +1,0 @@
-[submodule "assets/cascade"]
-	path = assets/cascade
-	url = git://github.com/mbrowne/cascadeframework.git
