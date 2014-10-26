@@ -6,9 +6,6 @@ Add an activity to the project
 	<dt>Primary Actor(s)</dt>
 	<dd>Planner</dd>
 	
-	<dt>Priority</dt>
-	<dd>A</dd>
-	
 	<dt>Level</dt>
 	<dd>User goal</dd>
 	
