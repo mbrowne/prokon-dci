@@ -43,8 +43,8 @@ global.navLinks = null;
 global.clickedNavLink = null;
 
 $.when(
-	$.ajax('nav-menu.json.php', {cache:false, dataType:'json'})
-	//$.ajax('nav-menu.json', {cache:false, dataType:'json'})
+	$.ajax('nav-menu.json', {cache:false, dataType:'json'})
+	//$.ajax('nav-menu.json.php', {cache:false, dataType:'json'})
 )
 .then(function(data) {
 	global.navLinksJson = data;
