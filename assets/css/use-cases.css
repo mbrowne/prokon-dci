@@ -4,9 +4,12 @@
 .use-case-properties dt:after {content:':'}
 .use-case-properties dd {border-bottom:1px solid #ccc; padding:5px 0; margin:0;}
 
+/* We're using a line-height of 150%, so adjust <br> size so two <br>s in a row will look more normal */
+.use-case li br {display:block; content: ' '; margin-bottom:.5em;}
+
 /*
-.scenario and .scenario-columns-header are for the pure CSS version using <ol>
-	(also for lists of steps in a single column rather than broken down to user and system)
+.scenario and .scenario-columns-header are for the pure CSS version using <ol>,
+	for lists of steps in a single column rather than broken down to user and system
 .scenario-table is the <table> version (<ol> is converted to two-column <table> using jQuery
 */
 
@@ -17,23 +20,19 @@
 .scenario {margin-left:30px;}
 .scenario, .scenario-table ol {text-indent:-1.1em;}
 .scenario-table ol {margin:0 15px;}
+.scenario-table ul {margin-bottom:0;}
+.scenario-table ol li, .scenario-table ul li:last-child {margin-bottom:0;}
 
 .scenario-table td {vertical-align:top;}
 .scenario-table td:first-child {width:50%;}
 
-.scenario:after {content:''; display:table; clear:both;} /* clearfix */
-.scenario li, .scenario-table li {list-style:none;}
+ol.scenario li, .scenario-table ol li {list-style:none;}
+ul.scenario, .scenario-table ul {list-style-position:outside; margin-left:15px;}
 
-.scenario li, .scenario-table li {margin-bottom:1em;}
 .scenario li li:first-child, .scenario-table li li:first-child {margin-top:1em}
-.scenario > .user {width:45%;}
-.scenario > .system {width:55%;}
 
 .scenario li:before, .scenario-table li:before {font-weight:bold;}
 .scenario > li:before, .scenario-table ol > li:before {content:counter(step) ". "; counter-increment: step; text-indent:-20px;}
-
-.scenario .user {float:left; clear:both;}
-.scenario .system {float:right; clear:right; padding-left:15px;}
 
 .scenario li > ol, .scenario-table li > ol {counter-reset: sub-step;}
 .scenario li > ol > li:before, .scenario-table li > ol > li:before {

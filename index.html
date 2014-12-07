@@ -359,10 +359,11 @@ function reformatUseCaseScenarios() {
 		var $table = $('<table class="scenario-table horizontal-border box-header" />'),
 			$headerRow = $(this).prev('.scenario-columns-header'),
 			$li,
-			$curTr, $curTd, $curOl,
+			$curTr, $curTd, $curList,
 			stepType,
 			prevStepType;
 		
+		//table header
 		if ($(this).find('li:first').is('.user, .system')) {		
 			//convert to <tr> header
 			var $oldHeaderRow = $headerRow,
@@ -379,13 +380,14 @@ function reformatUseCaseScenarios() {
 		}
 		else return true; //continue to the next .scenario
 		
+		//steps
 		$(this).children().each(function(i) {		
 			$li = $(this);
 			if ($li.hasClass('user'))
 				stepType = 'user';
 			else if ($li.hasClass('system'))
 				stepType = 'system';
-			
+							
 			//insert empty cell on the left if the first step is a system step (i.e. in the right-hand column)
 			if (i==0 && stepType=='system') {
 				$curTr = $('<tr/>').appendTo($table);
@@ -394,16 +396,26 @@ function reformatUseCaseScenarios() {
 			
 			$li.removeClass('user system');
 			
-			if (stepType != prevStepType)  {
-				if (stepType=='user') $curTr = $('<tr/>').appendTo($table);
+			if (stepType=='user' || stepType != prevStepType)  {
+				if (stepType=='user') {
+					//make the border span the full width by adding an empty right column if needed
+					if ($curTr && $curTr.children().length==1) {
+						$curTr.append( $('<td>&nbsp;</td>') );
+					}				
+					$curTr = $('<tr/>').appendTo($table);
+				}
 				$curTd = $('<td/>').appendTo($curTr);
-				$curOl = $('<ol/>').appendTo($curTd);
+				
+				var listTag = (stepType=='user' ? '<ol/>': '<ul/>');
+				$curList = $(listTag).appendTo($curTd);
 			}
 			
-			if ($curOl) $curOl.append($li);
+			if ($curList) $curList.append($li);
+			
 			prevStepType = stepType;
 		});
 		
+		//make the border span the full width by adding an empty right column if needed
 		if (stepType && $curTr.children().length==1) {
 			$curTr.append( $('<td>&nbsp;</td>') );
 		}

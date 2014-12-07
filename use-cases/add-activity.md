@@ -32,10 +32,9 @@ Add an activity to the project
 
 ### Deviations ###
 
-__2a. The user leaves one of the required fields blank (e.g. name, duration, resource requirement),
+__1a. The user leaves one of the required fields blank (e.g. name, duration, resource requirement),
 or enters invalid data (e.g. a non-numeric value for the resource requirement)__  
 The system displays an error message
 
-__2b. An activity with the provided name already exists__  
+__1b. An activity with the provided name already exists__  
 The system displays an error message
-
