@@ -24,7 +24,7 @@ Add an activity to the project
 </header>
 
 <ol class="scenario">
-	<li class="user">Enters the information for the Activity, including its name, duration, and a
+	<li class="user">Planner enters the information for the Activity, including its name, duration, and a
 		number representing its resource requirements
 	<li class="system">Validates the information and saves the Activity to the database
 	<li class="system">Displays the new activity on the Gantt chart

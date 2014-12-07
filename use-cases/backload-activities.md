@@ -18,6 +18,8 @@ Calculate the latest possible start times for all activities in the project
 
 ## Main Success Scenario ##
 
+The following steps are performed by the system:
+
 <ol class="scenario">
 	<li>Find all Activities of the project
 	<li>Reset end times of all Activities
