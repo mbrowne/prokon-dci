@@ -30,5 +30,5 @@ The following steps are performed by the system:
 			<li>If not, set its start time to the start time of the project
 		</ol>
 	</li>
-	<li>Continue until all Activities are planned (we might loop existing Activities several times)
+	<li>Continue from step 3 until all Activities are planned (we might loop existing Activities several times)
 </ol>
