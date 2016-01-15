@@ -23,12 +23,14 @@ The following steps are performed by the system:
 <ol class="scenario">
 	<li>Find all Activities of the project
 	<li>Reset end times of all Activities
-	<li>Find Activities that are unplanned but whose successors have been planned
-	<li>Check if each of those Successors is planned:
-		<ol>
-			<li>If so, plan this activity - set end time to the earliest Successor's start time
-			<li>If not, set its end time to the end time of the project
-		</ol>
-	</li>
-	<li>Continue until all Activities are planned (we might loop existing Activities several times)
+	<li>Find Activities that are unplanned but whose Successors have been planned
+	<li>Plan each of these Activities: set its start time to the earliest (minimum) late-finish time of its Successors
+	<li>Continue from step 3 until all Activities are planned (we might traverse the Activities multiple times)
+	<li>Display the project plan as a Gantt chart
 </ol>
+
+### Deviations
+
+__4a. No Predecessors__
+
+If there are no Predecessors, set the Activity's end time to the end time of the Project.

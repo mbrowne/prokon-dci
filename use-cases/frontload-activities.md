@@ -21,14 +21,16 @@ Calculate the earliest possible start times for all activities in the project
 The following steps are performed by the system:
 
 <ol class="scenario">
-	<li>Find all Activities of the project
+	<li>Find all Activities of the Project
 	<li>Reset start times of all Activities
-	<li>Find Activities that are unplanned but whose predecessors have been planned
-	<li>Check if each of those Predecessors is planned:
-		<ol>
-			<li>If so, plan this activity - set start time to the latest Precessor's end time
-			<li>If not, set its start time to the start time of the project
-		</ol>
-	</li>
-	<li>Continue from step 3 until all Activities are planned (we might loop existing Activities several times)
+	<li>Find Activities that are unplanned but whose Predecessors have been planned
+	<li>Plan each of these Activities: set its start time to the latest (maximum) early-finish time of its Predecessors
+	<li>Continue from step 3 until all Activities are planned (we might traverse the Activities multiple times)
+	<li>Display the project plan as a Gantt chart
 </ol>
+
+### Deviations
+
+__4a. No Predecessors__
+
+If there are no Predecessors, set the Activity's start time to the start time of the Project.
